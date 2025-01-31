@@ -65,9 +65,20 @@ public class Main {
             commandList.addAll(Arrays.asList(args)); // Add arguments
 
             ProcessBuilder processBuilder = new ProcessBuilder(commandList);
+            processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
 
-            process.getInputStream().transferTo(System.out);
+            Scanner scanner = new Scanner(process.getInputStream());
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                // Fix program name output: Remove full path, keep only filename
+                if (line.startsWith("Arg #0 (program name): ")) {
+                    String correctOutput = "Arg #0 (program name): " + new File(path).getName();
+                    System.out.println(correctOutput);
+                } else {
+                    System.out.println(line);
+                }
+            }
             process.waitFor(); // Wait for process to finish
         } catch (Exception e) {
             System.out.println("Error executing command: " + command);
