@@ -8,50 +8,76 @@ public class Main {
         Set<String> commands = Set.of("echo", "exit", "type");
 
         while (true) {
-            System.out.print("$ "); // Print prompt first
-            
-            String input = scanner.nextLine();
+            System.out.print("$ "); // Print shell prompt
 
-            // Print program name *after* first prompt (only once)
-            if (input.equals("print_program_name")) {
-                String programName = (args.length > 0) ? new File(args[0]).getName() : "unknown";
-                System.out.printf("Arg #0 (program name): %s%n", programName);
-                continue;
-            }
+            String input = scanner.nextLine().trim(); // Read and trim input
 
-            if (input.equals("exit")) {
+            if (input.isEmpty()) continue; // Ignore empty input
+
+            String[] parts = input.split(" ");
+            String command = parts[0]; // Extract command name
+            String[] commandArgs = Arrays.copyOfRange(parts, 1, parts.length); // Extract arguments
+
+            if (command.equals("exit")) {
                 System.exit(0);
-            } else if (input.startsWith("echo ")) {
-                System.out.println(input.substring(5));
-            } else if (input.startsWith("type ")) {
-                String arg = input.substring(5);
-                if (commands.contains(arg)) {
-                    System.out.printf("%s is a shell builtin%n", arg);
-                } else {
-                    String path = getPath(arg);
-                    if (path == null) {
-                        System.out.printf("%s: not found%n", arg);
-                    } else {
-                        System.out.printf("%s is %s%n", arg, path);
-                    }
-                }
+            } else if (command.equals("echo")) {
+                System.out.println(String.join(" ", commandArgs));
+            } else if (command.equals("type")) {
+                handleTypeCommand(commandArgs);
             } else {
-                String command = input.split(" ")[0];
-                String path = getPath(command);
-                if (path == null) {
-                    System.out.printf("%s: command not found%n", command);
-                } else {
-                    Process p = new ProcessBuilder(path).start();
-                    p.getInputStream().transferTo(System.out);
-                }
+                executeExternalCommand(command, commandArgs);
             }
+        }
+    }
+
+    private static void handleTypeCommand(String[] args) {
+        Set<String> builtins = Set.of("echo", "exit", "type");
+
+        if (args.length != 1) {
+            System.out.println("Usage: type <command>");
+            return;
+        }
+
+        String command = args[0];
+        if (builtins.contains(command)) {
+            System.out.printf("%s is a shell builtin%n", command);
+        } else {
+            String path = getPath(command);
+            if (path == null) {
+                System.out.printf("%s: not found%n", command);
+            } else {
+                System.out.printf("%s is %s%n", command, path);
+            }
+        }
+    }
+
+    private static void executeExternalCommand(String command, String[] args) {
+        String path = getPath(command);
+        if (path == null) {
+            System.out.printf("%s: command not found%n", command);
+            return;
+        }
+
+        try {
+            // Build full command with arguments
+            List<String> commandList = new ArrayList<>();
+            commandList.add(path); // Add executable path
+            commandList.addAll(Arrays.asList(args)); // Add arguments
+
+            ProcessBuilder processBuilder = new ProcessBuilder(commandList);
+            Process process = processBuilder.start();
+
+            process.getInputStream().transferTo(System.out);
+            process.waitFor(); // Wait for process to finish
+        } catch (Exception e) {
+            System.out.println("Error executing command: " + command);
         }
     }
 
     private static String getPath(String command) {
         for (String path : System.getenv("PATH").split(":")) {
             Path fullPath = Path.of(path, command);
-            if (Files.isRegularFile(fullPath)) {
+            if (Files.isRegularFile(fullPath) && Files.isExecutable(fullPath)) {
                 return fullPath.toString();
             }
         }
