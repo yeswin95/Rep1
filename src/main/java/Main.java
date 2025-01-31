@@ -1,24 +1,13 @@
 import java.util.Scanner;
-
 public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-
-        while (true) {
-            // Print prompt without newline
-            System.out.print("$ ");
-
-            // Read user input
-            if (!scanner.hasNextLine()) {
-                break;  // Handle EOF (Ctrl+D)
-            }
-
-            String command = scanner.nextLine();
-
-            // Print error message
-            System.out.println(command + ": command not found");
-        }
-
-        scanner.close();
+  public static void main(String[] args) throws Exception {
+    while (true) {
+      System.out.print("$ ");
+      Scanner scanner = new Scanner(System.in);
+      String input = scanner.nextLine();
+      if (input.equals("exit 0"))
+        break;
+      System.out.println(input + ": command not found");
     }
+  }
 }
