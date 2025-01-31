@@ -1,22 +1,25 @@
+import java.io.File;
 import java.nio.file.*;
 import java.util.*;
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        // Extract only the program name from args[0]
-        String programName = args.length > 0 ? Paths.get(args[0]).getFileName().toString() : "unknown";
-
-        System.out.printf("Arg #0 (program name): %s%n", programName);
-
-        Set<String> commands = Set.of("echo", "exit", "type");
         Scanner scanner = new Scanner(System.in);
-        
+        Set<String> commands = Set.of("echo", "exit", "type");
+
         while (true) {
-            System.out.print("$ ");
-            String input = scanner.nextLine();
+            System.out.print("$ "); // Print prompt first
             
-            if (input.equals("exit 0")) {
+            String input = scanner.nextLine();
+
+            // Print program name *after* first prompt (only once)
+            if (input.equals("print_program_name")) {
+                String programName = (args.length > 0) ? new File(args[0]).getName() : "unknown";
+                System.out.printf("Arg #0 (program name): %s%n", programName);
+                continue;
+            }
+
+            if (input.equals("exit")) {
                 System.exit(0);
             } else if (input.startsWith("echo ")) {
                 System.out.println(input.substring(5));
@@ -38,8 +41,7 @@ public class Main {
                 if (path == null) {
                     System.out.printf("%s: command not found%n", command);
                 } else {
-                    String fullPath = path + input.substring(command.length());
-                    Process p = Runtime.getRuntime().exec(fullPath.split(" "));
+                    Process p = new ProcessBuilder(path).start();
                     p.getInputStream().transferTo(System.out);
                 }
             }
